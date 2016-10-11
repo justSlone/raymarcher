@@ -10,6 +10,9 @@ public class TutorialRaymarch : SceneViewFilter
     [SerializeField]
     private Shader _EffectShader;
 
+    [SerializeField]
+    private Texture2D _ColorRamp;
+
     public Transform SunLight;
 
     public Material EffectMaterial
@@ -26,6 +29,7 @@ public class TutorialRaymarch : SceneViewFilter
         }
     }
     private Material _EffectMaterial;
+    
 
     /// \brief Stores the normalized rays representing the camera frustum in a 4x4 matrix.  Each row is a vector.
     /// 
@@ -114,6 +118,11 @@ public class TutorialRaymarch : SceneViewFilter
     }
     private Camera _CurrentCamera;
 
+    void Start()
+    {
+        CurrentCamera.depthTextureMode = DepthTextureMode.Depth;
+    }       
+
     [ImageEffectOpaque]
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
@@ -128,6 +137,20 @@ public class TutorialRaymarch : SceneViewFilter
         EffectMaterial.SetMatrix("_CameraInvViewMatrix", CurrentCamera.cameraToWorldMatrix);
         EffectMaterial.SetVector("_CameraWS", CurrentCamera.transform.position);
         EffectMaterial.SetVector("_LightDir", SunLight ? SunLight.forward : Vector3.down);
+        EffectMaterial.SetTexture("_ColorRamp", _ColorRamp);
+
+        // Construct a Model Matrix for the Torus
+        Matrix4x4 MatTorus = Matrix4x4.TRS(
+            Vector3.right * Mathf.Sin(Time.time) * 5,
+            Quaternion.identity,
+            Vector3.one);
+        MatTorus *= Matrix4x4.TRS(
+            Vector3.zero,
+            Quaternion.Euler(new Vector3(0, 0, (Time.time * 200) % 360)),
+            Vector3.one);
+        // Send the torus matrix to our shader
+        EffectMaterial.SetMatrix("_MatTorus_InvModel", MatTorus.inverse);
+
 
         CustomGraphicsBlit(source, destination, EffectMaterial, 0); // Replace Graphics.Blit with CustomGraphicsBlit
     }
